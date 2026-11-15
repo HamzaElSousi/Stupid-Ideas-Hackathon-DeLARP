@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <nav>
             <Link href="/" className="navbtn">🔎 Investigate</Link>
             <Link href="/larp-list" className="navbtn hot">🚨 LARP List</Link>
-            <Link href="/api/stupid" target="_blank" className="navbtn">🤡 Stupid API</Link>
+            <Link href="/stupid-api" className="navbtn">🤡 Stupid API</Link>
           </nav>
         </header>
         <div className="ticker" aria-hidden>
