@@ -155,7 +155,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!loading) return;
-    const t = setInterval(() => setLine((l) => Math.min(l + 1, LOADING_LINES.length - 1)), 900);
+    const t = setInterval(() => setLine((l) => Math.min(l + 1, LOADING_LINES.length - 1)), 1300);
     return () => clearInterval(t);
   }, [loading]);
 
@@ -603,13 +603,17 @@ export default function Home() {
               <h2 className="stage-title">
                 Investigating <span>{username ? `@${username.replace(/^@/, "")}` : "the suspect"}</span>
               </h2>
-              <ol className="stage-steps" aria-live="polite">
-                {LOADING_LINES.map((l, i) => (
-                  <li key={l} className={i < line ? "done" : i === line ? "now" : ""}>
-                    {l}
-                  </li>
+              <ol className="stage-done" aria-hidden>
+                {LOADING_LINES.slice(Math.max(0, line - 3), line).map((l) => (
+                  <li key={l}>{l}</li>
                 ))}
               </ol>
+              <p className="stage-now" key={line} aria-live="polite">
+                {LOADING_LINES[line]}
+              </p>
+              <p className="stage-count" aria-hidden>
+                Step {line + 1} of {LOADING_LINES.length}
+              </p>
             </div>
           ) : (
             result && (

@@ -494,3 +494,24 @@ kbd { font: inherit; font-size: 12px; background: var(--ink); color: var(--paper
 .hero h1 mark { display: inline-block; padding: .02em .18em .06em; margin-top: .12em; transform: rotate(-1.5deg); box-shadow: 6px 6px 0 var(--ink); }
 .hero .kicker { margin-bottom: 14px; }
 .lede { line-height: 1.7; margin-bottom: 40px; }
+
+/* one investigation step at a time, big */
+.stage-title { font-size: clamp(28px, 4.5vw, 44px); margin-bottom: 28px; }
+.stage-done { list-style: none; padding: 0; margin: 0 auto 18px; min-height: 84px; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; font-size: 15px; color: #8f8878; }
+.stage-done li { animation: shrink-up .4s ease-out both; }
+.stage-done li::before { content: "☑ "; color: #6be08d; }
+@keyframes shrink-up { from { transform: translateY(24px) scale(1.4); opacity: 0; } }
+.stage-now {
+  margin: 0 auto; max-width: 16ch; min-height: 2.2em;
+  font-family: var(--display); font-weight: 400; text-transform: uppercase;
+  font-size: clamp(40px, 7.5vw, 84px); line-height: 1.02; color: var(--hi);
+  text-shadow: 0 0 30px rgba(255,230,59,.25);
+  animation: step-in .5s cubic-bezier(.2,1.5,.4,1) both;
+}
+.stage-now::before { content: "🔎 "; font-size: .6em; vertical-align: .15em; }
+@keyframes step-in {
+  0% { transform: translateY(40px) scale(.7) rotate(-3deg); opacity: 0; filter: blur(4px); }
+  100% { transform: none; opacity: 1; filter: none; }
+}
+.stage-count { margin: 18px 0 0; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: #8f8878; }
+.stage-now { max-width: 20ch; }
