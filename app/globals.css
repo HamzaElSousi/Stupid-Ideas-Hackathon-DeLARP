@@ -484,3 +484,13 @@ kbd { font: inherit; font-size: 12px; background: var(--ink); color: var(--paper
 .farty-sticker { z-index: 3; top: -26px; left: -40px; }
 .farty-wrap { right: 26px; bottom: 26px; }
 .callout { top: auto; bottom: 10%; font-size: clamp(26px, 5vw, 56px); white-space: normal; width: min(90vw, 900px); }
+
+/* ===================== roomier hero ===================== */
+.hero { margin-bottom: 36px; }
+.hero h1 {
+  font-size: clamp(44px, 8.4vw, 92px); line-height: 1.04; letter-spacing: .015em;
+  margin: 6px 0 26px; word-spacing: .08em;
+}
+.hero h1 mark { display: inline-block; padding: .02em .18em .06em; margin-top: .12em; transform: rotate(-1.5deg); box-shadow: 6px 6px 0 var(--ink); }
+.hero .kicker { margin-bottom: 14px; }
+.lede { line-height: 1.7; margin-bottom: 40px; }
