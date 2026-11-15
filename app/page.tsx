@@ -10,10 +10,10 @@ const LOADING_LINES = [
   "Reading the post with a straight face",
   "Counting the word 'humbled'",
   "Checking the news for the $10M raise",
+  "Reverse-image searching the beach in Bali",
   "Looking for a single paying customer",
-  "Searching GitHub for one (1) commit",
   "Asking their cofounder (their mom)",
-  "Locating the product. Still locating",
+  "Locating the receipts. Still locating",
 ];
 
 type Sample = { text: string; username: string; platform: "linkedin" | "x" };
@@ -61,6 +61,15 @@ That's when I realized: the greatest companies are built in silence. 🤫
 I'm humbled to be named a Top 1% Voice (by myself).
 
 Agree?`,
+  },
+  {
+    username: "jetsetjordan",
+    platform: "x",
+    text: `Woke up in Dubai, lunch in Monaco, sunset in Santorini. Just another Tuesday 🌅
+
+My girlfriend (she's a model, you wouldn't know her) says I work too hard.
+
+Passive income is a mindset. Link in bio to learn how I made $40k this week from my phone.`,
   },
   {
     username: "stealthfounder_",
@@ -285,10 +294,11 @@ export default function Home() {
         <div className="folder-tab">Case 2026-{caseNo === "0000" ? "open" : caseNo}</div>
         <header className="report-head">
           <p className="dept">Department of Receipts, LARP Division</p>
-          <h1>Show me the product.</h1>
+          <h1>Receipts, please.</h1>
           <p className="lede">
-            Paste a LinkedIn or X post. We look for proof that any of it is real, score the LARP, and either sign it off
-            with <b>REAL TALK.</b> or write the politest devastating reply you will ever post.
+            Paste a LinkedIn or X post bragging about money, a startup, a new job, a relationship or a trip. We look for
+            proof that any of it is real, score the LARP, and either sign it off with <b>REAL TALK.</b> or write the
+            politest devastating reply you will ever post.
           </p>
         </header>
 
@@ -467,7 +477,7 @@ export default function Home() {
             </div>
             <div className="meter-scale" aria-hidden>
               <span>touches grass</span>
-              <span>founder of nothing</span>
+              <span>all talk</span>
             </div>
             <p className="tier">{tierOf(result.larpScore)}</p>
           </div>
@@ -507,7 +517,7 @@ export default function Home() {
                 <dl>
                   <div>
                     <dt>Bail</dt>
-                    <dd>1 working product</dd>
+                    <dd>1 receipt</dd>
                   </div>
                   <div>
                     <dt>Aura lost</dt>

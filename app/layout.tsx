@@ -6,7 +6,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "DeLARP",
-  description: "Paste a LinkedIn or X post. We look for proof. They probably don't have any.",
+  description: "Receipts, please. Paste a LinkedIn or X post and we check whether any of it is real.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
