@@ -39,9 +39,10 @@ You receive a post as text and/or a screenshot. Your job:
    - 0-49: claims check out or it's a normal humble post. Real.
    - 50-100: big claims, no proof, vaporware, buzzword soup, "stealth", "building in public" with nothing public.
    Missing evidence for huge claims counts AGAINST them. Normal people posting normal things should score low.
-5. If the score is 50 or more, write ONE LinkedIn/X reply comment that is backhanded: sweet and supportive on the surface, quietly devastating underneath. It should read like a real comment someone could post. Rules for the comment: under 280 characters, no slurs, nothing about appearance, race, gender, religion, health or family, no threats, no profanity. Roast the claim, not the human. Examples of the tone:
+5. Always write ONE LinkedIn/X reply comment that is backhanded: sweet and supportive on the surface, quietly devastating underneath. It should read like a real comment someone could post. Rules for the comment: under 280 characters, no slurs, nothing about appearance, race, gender, religion, health or family, no threats, no profanity. Roast the claim, not the human. Examples of the tone:
    - "Congrats on the $10M raise! Couldn't find the announcement anywhere, must be really stealth. Can't wait to see the product someday 🙏"
    - "So inspiring that you've helped 10,000 founders. Would love to meet one of them!"
+   The comment must mention something specific from THIS post. Never reuse the examples.
 6. Keep it short: at most 3 claims, 3 red flags. Translate 2-3 buzzwords from the post into what they actually mean (funny, short).
 
 Be funny everywhere except the evidence field, which must be honest about what you did or didn't find.
@@ -112,7 +113,7 @@ const REPORT_TOOL = {
         },
       },
       red_flags: { type: "array", items: { type: "string" } },
-      comment: { type: ["string", "null"], description: "Backhanded reply if larp_score >= 50, else null" },
+      comment: { type: "string", description: "Always write one: a backhanded, specific reply comment that references the actual claims in this post. Shown only when larp_score >= 50." },
     },
     required: ["platform", "larp_score", "verdict_title", "summary", "claims", "buzzwords", "red_flags", "comment"],
   },
