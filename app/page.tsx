@@ -84,11 +84,11 @@ Thanks to my study group for the practice questions and for putting up with me. 
 };
 
 function tierOf(score: number) {
-  if (score < 20) return "Certified human 🌱";
+  if (score < 20) return "Certified human";
   if (score < 50) return "Mild LinkedIn energy";
   if (score < 70) return "Part-time LARPer";
   if (score < 90) return "Full-time LARPer";
-  return "LARP Lord 👑";
+  return "LARP lord";
 }
 
 // A two-tone police siren, synthesized. Wee-woo.
@@ -280,153 +280,177 @@ export default function Home() {
   const handle = (result?.username || username || "").replace(/^@/, "");
 
   return (
-    <div className="page">
-      <section className="hero">
-        <p className="kicker">Case No. {new Date().getFullYear()}-STUPID · Department of Receipts</p>
-        <h1>
-          Show me the <mark>product.</mark>
-        </h1>
-        <p className="lede">
-          Paste a LinkedIn or X post. Our AI investigator searches the internet for proof, scores the LARP, and either
-          says <b>REAL TALK.</b> or writes the most politely devastating comment you&apos;ve ever posted.
-        </p>
-      </section>
+    <div className="desk">
+      <div className="folder">
+        <div className="folder-tab">Case 2026-{caseNo === "0000" ? "open" : caseNo}</div>
+        <header className="report-head">
+          <p className="dept">Department of Receipts, LARP Division</p>
+          <h1>Show me the product.</h1>
+          <p className="lede">
+            Paste a LinkedIn or X post. We look for proof that any of it is real, score the LARP, and either sign it off
+            with <b>REAL TALK.</b> or write the politest devastating reply you will ever post.
+          </p>
+        </header>
 
-      <section className="evidence">
-        <div className="tab">EXHIBIT A</div>
-        <p className="paste-hint">
-          <kbd>Ctrl</kbd>+<kbd>V</kbd> a screenshot anywhere on this page and the investigation starts by itself.
-        </p>
-        <label className="label" htmlFor="post">The post</label>
-        <textarea
-          id="post"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Paste the 'thrilled and humbled' post here…"
-          rows={8}
-        />
-        <div className="samples">
-          <button
-            className="linkish"
-            type="button"
-            onClick={() => {
-              const smp = LARPS[sampleIdx % LARPS.length];
-              setSampleIdx((i) => i + 1);
-              setText(smp.text);
-              setUsername(smp.username);
-              setPlatform(smp.platform);
-            }}
-          >
-            🎲 load a certified LARP
-          </button>
-          <button
-            className="linkish"
-            type="button"
-            onClick={() => {
-              setText(HUMAN.text);
-              setUsername(HUMAN.username);
-              setPlatform(HUMAN.platform);
-            }}
-          >
-            🌱 or a suspiciously normal human
-          </button>
-        </div>
-
-        <div
-          className={`drop ${dragging ? "over" : ""} ${image ? "has" : ""}`}
-          role="button"
-          tabIndex={0}
-          aria-label={image ? "Screenshot attached. Press to replace it." : "Attach a screenshot of the post"}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              fileRef.current?.click();
-            }
-          }}
-          onClick={() => fileRef.current?.click()}
-          onDragOver={(e) => {
+        <form
+          className="report"
+          onSubmit={(e) => {
             e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragging(false);
-            onFile(e.dataTransfer.files[0]);
+            if (!loading && (text.trim() || image)) investigate();
           }}
         >
-          {image ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={image} alt="Screenshot evidence" />
-              <button
-                className="remove"
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setImage(null);
+          <div className="report-title">
+            <span>Form DL-1</span>
+            <b>Incident report: suspected LARP</b>
+          </div>
+
+          <p className="paste-hint">
+            Fastest way: copy a screenshot of the post and press <kbd>Ctrl</kbd> + <kbd>V</kbd> anywhere on this page. The
+            report files itself.
+          </p>
+
+          <ol className="fields">
+            <li className="field">
+              <label htmlFor="post">
+                <span className="fno">1</span> The post, exactly as written
+              </label>
+              <textarea
+                id="post"
+                className="ruled"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder="Thrilled and humbled to announce…"
+                rows={7}
+              />
+              <div className="samples">
+                <span>No post handy?</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const smp = LARPS[sampleIdx % LARPS.length];
+                    setSampleIdx((i) => i + 1);
+                    setText(smp.text);
+                    setUsername(smp.username);
+                    setPlatform(smp.platform);
+                  }}
+                >
+                  Use a sample LARP
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setText(HUMAN.text);
+                    setUsername(HUMAN.username);
+                    setPlatform(HUMAN.platform);
+                  }}
+                >
+                  Use a normal post
+                </button>
+              </div>
+            </li>
+
+            <li className="field">
+              <span className="flabel">
+                <span className="fno">2</span> Photo evidence <small>(optional)</small>
+              </span>
+              <div
+                className={`evidence-drop ${dragging ? "over" : ""} ${image ? "has" : ""}`}
+                role="button"
+                tabIndex={0}
+                aria-label={image ? "Screenshot attached. Press to replace it." : "Attach a screenshot of the post"}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    fileRef.current?.click();
+                  }
+                }}
+                onClick={() => fileRef.current?.click()}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragging(true);
+                }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragging(false);
+                  onFile(e.dataTransfer.files[0]);
                 }}
               >
-                ✕ remove
-              </button>
-            </>
-          ) : (
-            <span>📸 Drop a screenshot, click to upload, or just Ctrl+V it</span>
-          )}
-          <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => onFile(e.target.files?.[0])} />
-        </div>
+                {image ? (
+                  <figure className="clipped">
+                    <i className="paperclip" aria-hidden />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={image} alt="Screenshot evidence" />
+                    <button
+                      className="remove"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setImage(null);
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </figure>
+                ) : (
+                  <span>Drop a screenshot here, or click to attach one.</span>
+                )}
+                <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => onFile(e.target.files?.[0])} />
+              </div>
+            </li>
 
-        <div className="row">
-          <div className="field">
-            <label className="label" htmlFor="user">Suspect&apos;s handle (optional)</label>
-            <input id="user" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="@hustlebro420" />
-          </div>
-          <div className="field">
-            <span className="label">Crime scene</span>
-            <div className="seg" role="group" aria-label="Platform">
-              {(["auto", "linkedin", "x"] as const).map((p) => (
-                <button key={p} type="button" aria-pressed={platform === p} className={platform === p ? "on" : ""} onClick={() => setPlatform(p)}>
-                  {p === "auto" ? "Auto" : p === "linkedin" ? "LinkedIn" : "X"}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+            <li className="field split">
+              <div>
+                <label htmlFor="user">
+                  <span className="fno">3</span> Suspect&apos;s handle <small>(optional)</small>
+                </label>
+                <input id="user" className="line-input" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="@hustlebro420" />
+              </div>
+              <div>
+                <span className="flabel">
+                  <span className="fno">4</span> Posted on
+                </span>
+                <div className="checks" role="radiogroup" aria-label="Platform">
+                  {(["auto", "linkedin", "x"] as const).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      role="radio"
+                      aria-checked={platform === p}
+                      className={platform === p ? "on" : ""}
+                      onClick={() => setPlatform(p)}
+                    >
+                      <i aria-hidden>{platform === p ? "☒" : "☐"}</i>
+                      {p === "auto" ? "Not sure" : p === "linkedin" ? "LinkedIn" : "X"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </li>
+          </ol>
 
-        <button className="go" disabled={loading || (!text.trim() && !image)} onClick={() => investigate()}>
-          {loading ? "INVESTIGATING…" : "DeLARP THIS 🔎"}
-        </button>
-        <div aria-live="polite">
-          {loading && (
-            <div className="investigating">
-              <p className="label">Investigation in progress</p>
-              <ol>
-                {LOADING_LINES.map((l, i) => (
-                  <li key={l} className={i < line ? "done" : i === line ? "now" : ""}>
-                    {l}
-                    {i === line ? "…" : ""}
-                  </li>
-                ))}
-              </ol>
-              <div className="bar-loader" />
-            </div>
-          )}
+          <div className="sign-row">
+            <p className="signature">
+              <span>Filed by</span>
+              <i>a concerned citizen</i>
+            </p>
+            <button className="stamp-btn" type="submit" disabled={loading || (!text.trim() && !image)}>
+              {loading ? "Filing…" : "File report"}
+            </button>
+          </div>
+
           {error && (
             <p className="error" role="alert">
-              <b>⚠</b>
-              <span>
-                {error} <br />
-                <small>Try again, or paste the text instead of a screenshot.</small>
-              </span>
+              <b>Report not filed.</b> {error} Try again, or paste the text instead of a screenshot.
             </p>
           )}
-        </div>
-      </section>
+        </form>
+      </div>
 
       {result && (
         <section
           ref={resultRef}
-          className={`verdict ${isLarp ? "larp" : "real"}`}
+          className={`verdict casefile ${isLarp ? "larp" : "real"}`}
           aria-label={`Verdict: ${isLarp ? "LARP" : "real talk"}, ${result.larpScore} percent`}
           tabIndex={-1}
         >
@@ -459,7 +483,12 @@ export default function Home() {
           {isLarp ? (
             <div className="mugshot">
               <div className="lineup" aria-hidden>
-                <span className="perp">🤵</span>
+                <span className="perp" aria-hidden>
+                  <svg viewBox="0 0 100 120" width="120" height="144">
+                    <circle cx="50" cy="38" r="22" />
+                    <path d="M12 120 C12 82 30 68 50 68 C70 68 88 82 88 120 Z" />
+                  </svg>
+                </span>
                 <div className="placard">
                   <b>DeLARP PD</b>
                   <span>@{(result.username || "unknown").replace(/^@/, "")}</span>
@@ -490,9 +519,9 @@ export default function Home() {
           ) : (
             <div className="certified">
               <div className="seal" aria-hidden>
-                <span>CERTIFIED</span>
-                <b>🫡</b>
-                <span>NOT A LARPER</span>
+                <span>Cleared</span>
+                <b>Real talk</b>
+                <span>No LARP found</span>
               </div>
               <p>
                 Rare sighting: a post with receipts. This person may have touched grass recently. Approach with respect.
@@ -517,9 +546,9 @@ export default function Home() {
           {isLarp && (
             <p className="listed">
               {result.listed
-                ? `🚨 Added to the LARP List${result.listed.offenses > 1 ? ` (repeat offender, ${result.listed.offenses} strikes)` : ""}. `
-                : "🚨 No handle found, so they escape the list. This time. "}
-              <Link href="/larp-list">See the LARP List →</Link>
+                ? `Added to Most Wanted${result.listed.offenses > 1 ? ` (repeat offender, ${result.listed.offenses} strikes)` : ""}. `
+                : "No handle found, so they stay off Most Wanted. This time. "}
+              <Link href="/larp-list">Open Most Wanted</Link>
             </p>
           )}
 
@@ -559,7 +588,7 @@ export default function Home() {
               <p className="label">Red flags</p>
               <div className="flags">
                 {result.redFlags.map((f, i) => (
-                  <span key={i}>🚩 {f}</span>
+                  <span key={i}>{f}</span>
                 ))}
               </div>
             </div>
@@ -646,10 +675,10 @@ export default function Home() {
                       setCopied(true);
                     }}
                   >
-                    {copied ? "Copied. Go." : isLarp ? "📋 Copy the roast" : "📋 Copy"}
+                    {copied ? "Copied. Go." : isLarp ? "Copy the roast" : "Copy"}
                   </button>
                   <button type="button" onClick={nextSuspect}>
-                    ⏭ Next suspect
+                    Next suspect
                   </button>
                   <button
                     type="button"
@@ -658,11 +687,11 @@ export default function Home() {
                       setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
                     }}
                   >
-                    🗂 Full case file
+                    Full case file
                   </button>
                   {isLarp && (
                     <Link href="/larp-list" className="stage-link">
-                      🚨 LARP List
+                      Most wanted
                     </Link>
                   )}
                 </div>

@@ -25,9 +25,9 @@ export default async function LarpListPage() {
   return (
     <div className="page">
       <section className="hero">
-        <p className="kicker">Most wanted · updated live</p>
+        <p className="kicker">Department of Receipts, LARP Division</p>
         <h1>
-          The <mark>LARP</mark> List
+          Most wanted
         </h1>
         <p className="lede">Everyone who scored 50% or higher. Sorted by LARP score × times caught. If you&apos;re on here, the fastest way off is shipping something.</p>
       </section>
@@ -60,7 +60,7 @@ export default async function LarpListPage() {
       </section>
 
       <section className="platforms">
-        <p className="label">LARPers by crime scene</p>
+        <p className="label">Where they were caught</p>
         {platforms.map((p) => (
           <div key={p.key} className="bar">
             <span>{p.name}</span>

@@ -130,32 +130,67 @@ export default function StupidApiPage() {
 
   return (
     <div className="page wide">
-      <section className="hero">
-        <p className="kicker">Public API · v0.0.1-alpha-final-FINAL(2)</p>
-        <h1>
-          The <mark>Stupid</mark> API
+      <section className="collab" aria-labelledby="collab-title">
+        <span className="collab-stamp" aria-hidden>
+          Joint operation
+        </span>
+        <h1 id="collab-title">
+          DeLARP <span aria-hidden>×</span> <span className="sr-only">and</span> AURA DEBT
         </h1>
+        <p className="collab-lede">
+          This API powers <b>AURA DEBT</b>, a parody bank that audits your cringe, built by{" "}
+          <a href="https://github.com/mansijoshi04" target="_blank" rel="noreferrer">
+            @mansijoshi04
+          </a>{" "}
+          and team at this same hackathon. Their LARP check sends posts to our investigator, and our verdict lands in
+          their ledger as an aura fine. Two stupid ideas, one economy.
+        </p>
+        <ol className="flow" aria-label="How the two apps connect">
+          <li>
+            <b>AURA DEBT</b>
+            <span>you paste a post</span>
+          </li>
+          <li className="us">
+            <b>DeLARP API</b>
+            <span>we look for receipts</span>
+          </li>
+          <li>
+            <b>Their ledger</b>
+            <span>−8,800 aura, plus a side quest</span>
+          </li>
+        </ol>
+        <div className="collab-links">
+          <a className="btn-primary" href="https://aura-debt.vercel.app/" target="_blank" rel="noreferrer">
+            Open AURA DEBT
+          </a>
+          <a className="btn-secondary" href="https://github.com/mansijoshi04/sih_project" target="_blank" rel="noreferrer">
+            See their code on GitHub
+          </a>
+        </div>
+      </section>
+
+      <section className="hero">
+        <h2 className="api-title">The Stupid API</h2>
         <p className="lede">
-          Real endpoints. Real JSON. Completely useless data. Free to call, no key, CORS wide open, because nothing here
+          Real endpoints, real JSON, completely useless data. No key, no rate limits, CORS wide open, because nothing here
           should be trusted anyway.
         </p>
       </section>
 
       <section className="debt-clock" aria-live="off">
-        <p className="label">National aura debt · accruing live</p>
+        <p className="label">National aura debt, accruing live</p>
         <b>{data ? `-${debt.toLocaleString()}` : "calculating…"}</b>
         <p className="debt-sub">
           {data
-            ? `${data.most_wanted.length} debtors · ${data.stats.larpsCaught} LARPs caught · debt ceiling: none · GDP in grass touched: 0`
+            ? `${data.most_wanted.length} debtors, ${data.stats.larpsCaught} LARPs caught. Debt ceiling: none. GDP in grass touched: 0.`
             : " "}
         </p>
       </section>
 
       <section className="lookup">
-        <div className="tab">CREDIT CHECK</div>
-        <form onSubmit={lookup}>
-          <label className="label" htmlFor="h">
-            Pull anyone&apos;s aura statement
+                <form onSubmit={lookup}>
+          <label className="lookup-title" htmlFor="h">
+            Run a credit check on anyone
           </label>
           <div className="lookup-row">
             <input id="h" value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="@handle" />
@@ -216,28 +251,8 @@ export default function StupidApiPage() {
         )}
       </section>
 
-      <section className="powering">
-        <p className="label">Powering other people&apos;s bad ideas</p>
-        <h2>AURA DEBT runs on this API</h2>
-        <p>
-          Another team at this hackathon built <b>AURA DEBT</b>, a parody bank that audits your cringe. Its{" "}
-          <b>LARP check</b> sends posts to our <code>POST /api/analyze</code>, and our verdict lands in their ledger as an
-          aura fine, with a side quest to pay it off. Two stupid ideas, one economy.
-        </p>
-        <div className="flow" aria-hidden>
-          <span>AURA DEBT</span>
-          <i>→ post →</i>
-          <span className="us">DeLARP API</span>
-          <i>→ −8,800 aura →</i>
-          <span>their ledger</span>
-        </div>
-        <a href="https://github.com/mansijoshi04/sih_project" target="_blank" rel="noreferrer" className="ext">
-          See AURA DEBT on GitHub →
-        </a>
-      </section>
-
       <section className="endpoints">
-        <p className="label">Endpoints</p>
+        <h2 className="api-title small">Endpoints</h2>
         {endpoints.map((e) => {
           const out = outputs[e.path];
           return (
@@ -250,7 +265,7 @@ export default function StupidApiPage() {
               <p>{e.what}</p>
               <div className="endpoint-actions">
                 <button type="button" onClick={() => tryIt(e)} disabled={out?.loading}>
-                  {out?.loading ? "Calling…" : "▶ Try it live"}
+                  {out?.loading ? "Calling…" : "Try it live"}
                 </button>
                 <pre className="example">{e.example}</pre>
               </div>
@@ -259,7 +274,7 @@ export default function StupidApiPage() {
                   <div className="response-head">
                     <span>{out.status} · {out.ms} ms</span>
                     <button type="button" onClick={() => setOutputs((o) => ({ ...o, [e.path]: { loading: false } }))}>
-                      ✕
+                      Close
                     </button>
                   </div>
                   <pre>{out.body}</pre>
@@ -271,7 +286,7 @@ export default function StupidApiPage() {
       </section>
 
       <section className="errors">
-        <p className="label">Fine print</p>
+        <h2 className="api-title small">Fine print</h2>
         <ul>
           <li>
             <b>Rate limits:</b> none. The aura economy is already in freefall.

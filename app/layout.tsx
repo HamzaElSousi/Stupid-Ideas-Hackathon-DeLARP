@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import FartyParty from "@/components/FartyParty";
+import NavTabs from "@/components/NavTabs";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,31 +16,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Narrow:wght@400;600;700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap"
           rel="stylesheet"
         />
       </head>
       <body>
-        <header className="masthead">
-          <Link href="/" className="logo">
-            De<span>LARP</span>
+        <header className="topbar">
+          <Link href="/" className="logo-stamp" aria-label="DeLARP home">
+            <b>DeLARP</b>
+            <span>Bureau of Receipts</span>
           </Link>
-          <nav>
-            <Link href="/" className="navbtn">🔎 Investigate</Link>
-            <Link href="/larp-list" className="navbtn hot">🚨 LARP List</Link>
-            <Link href="/stupid-api" className="navbtn">🤡 Stupid API</Link>
-          </nav>
+          <NavTabs />
         </header>
-        <div className="ticker" aria-hidden>
-          <div>
-            STEALTH FOUNDER = UNEMPLOYED ✦ "BUILDING IN AI" = HAS A CHATGPT TAB OPEN ✦ "HUMBLED TO ANNOUNCE" = NOT HUMBLE ✦
-            "PRE-REVENUE" = NO REVENUE ✦ "SERIAL ENTREPRENEUR" = 4 DEAD DOMAINS ✦ "AGREE?" = PLEASE ENGAGE ✦ STEALTH FOUNDER =
-            UNEMPLOYED ✦ "BUILDING IN AI" = HAS A CHATGPT TAB OPEN ✦ "HUMBLED TO ANNOUNCE" = NOT HUMBLE ✦
-          </div>
-        </div>
         <main>{children}</main>
         <footer className="foot">
-          Built at the Stupid Ideas Hackathon, Ottawa, Nov 15 2026. No tech bros were harmed. Their aura, however, is gone.
+          Filed at the Stupid Ideas Hackathon, Ottawa, November 15, 2026. No tech bros were harmed. Their aura is another matter.
         </footer>
         <FartyParty />
       </body>
