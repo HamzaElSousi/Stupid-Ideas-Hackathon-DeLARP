@@ -46,18 +46,7 @@ You receive a post as text and/or a screenshot. Your job:
 
 Be funny everywhere except the evidence field, which must be honest about what you did or didn't find.
 
-Finish your reply with ONLY a JSON object in a \`\`\`json code block, with exactly these keys:
-{
-  "username": string or null,
-  "platform": "linkedin" | "x" | "unknown",
-  "larp_score": integer 0-100,
-  "verdict_title": short dramatic headline (max 8 words),
-  "summary": 1-2 funny sentences on what you found,
-  "claims": [{"claim": string, "verdict": "verified"|"unverified"|"debunked"|"pure vibes", "evidence": string}],
-  "buzzwords": [{"original": string, "translation": string}],
-  "red_flags": [short strings],
-  "comment": the backhanded comment if larp_score >= 50, otherwise null
-}`;
+When you are done investigating, call the file_report tool exactly once with your findings. Do not write the report as text.`;
 
 type ContentBlock = {
   type: string;
@@ -89,7 +78,45 @@ function extractJson(text: string): Record<string, unknown> | null {
   }
 }
 
-type RawRun = { text: string; searches: string[]; sources: { url: string; title: string }[] };
+type RawRun = { report: Record<string, unknown>; searches: string[]; sources: { url: string; title: string }[] };
+
+const REPORT_TOOL = {
+  name: "file_report",
+  description: "File the final DeLARP investigation report. Call this once, after any web searches.",
+  input_schema: {
+    type: "object",
+    properties: {
+      username: { type: ["string", "null"], description: "Author handle without @, or null if unknown" },
+      platform: { type: "string", enum: ["linkedin", "x", "unknown"] },
+      larp_score: { type: "integer", minimum: 0, maximum: 100 },
+      verdict_title: { type: "string", description: "Short dramatic headline, max 8 words" },
+      summary: { type: "string", description: "1-2 funny sentences on what you found" },
+      claims: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            claim: { type: "string" },
+            verdict: { type: "string", enum: ["verified", "unverified", "debunked", "pure vibes"] },
+            evidence: { type: "string" },
+          },
+          required: ["claim", "verdict", "evidence"],
+        },
+      },
+      buzzwords: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: { original: { type: "string" }, translation: { type: "string" } },
+          required: ["original", "translation"],
+        },
+      },
+      red_flags: { type: "array", items: { type: "string" } },
+      comment: { type: ["string", "null"], description: "Backhanded reply if larp_score >= 50, else null" },
+    },
+    required: ["platform", "larp_score", "verdict_title", "summary", "claims", "buzzwords", "red_flags"],
+  },
+};
 
 function buildPrompt(input: AnalyzeInput) {
   let prompt = "Investigate this post for LARPing.\n";
@@ -100,64 +127,83 @@ function buildPrompt(input: AnalyzeInput) {
   return prompt;
 }
 
-// ---------- Claude Haiku with web search ----------
+type Block = ContentBlock & { id?: string; name?: string; input?: Record<string, unknown> & { query?: string } };
+
+async function callClaude(apiKey: string, messages: unknown[], forceReport: boolean) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+    body: JSON.stringify({
+      model: process.env.ANTHROPIC_MODEL || "claude-haiku-5-5",
+      max_tokens: 3000,
+      system: SYSTEM,
+      messages,
+      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 4 }, REPORT_TOOL],
+      tool_choice: forceReport ? { type: "tool", name: "file_report" } : { type: "auto" },
+    }),
+  });
+  if (!res.ok) throw new Error(`Claude API ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  return (await res.json()) as { content: Block[]; stop_reason: string };
+}
+
 async function runClaude(input: AnalyzeInput, apiKey: string): Promise<RawRun> {
   const userContent: unknown[] = [];
   if (input.image) {
-    userContent.push({
-      type: "image",
-      source: { type: "base64", media_type: input.image.mediaType, data: input.image.data },
-    });
+    userContent.push({ type: "image", source: { type: "base64", media_type: input.image.mediaType, data: input.image.data } });
   }
   userContent.push({ type: "text", text: buildPrompt(input) });
 
   const messages: { role: string; content: unknown }[] = [{ role: "user", content: userContent }];
-  const allBlocks: ContentBlock[] = [];
+  const allBlocks: Block[] = [];
+  let report: Record<string, unknown> | null = null;
 
-  for (let i = 0; i < 4; i++) {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || "claude-haiku-5-5",
-        max_tokens: 3000,
-        system: SYSTEM,
-        messages,
-        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 4 }],
-      }),
-    });
-    if (!res.ok) throw new Error(`Claude API ${res.status}: ${(await res.text()).slice(0, 300)}`);
-    const data = (await res.json()) as { content: ContentBlock[]; stop_reason: string };
+  for (let i = 0; i < 5 && !report; i++) {
+    // Last chance: force the report tool so we always get structured output.
+    const force = i === 4;
+    const data = await callClaude(apiKey, messages, force);
     allBlocks.push(...data.content);
-    if (data.stop_reason !== "pause_turn") break;
+    const reportBlock = data.content.find((b) => b.type === "tool_use" && b.name === "file_report");
+    if (reportBlock?.input) {
+      report = reportBlock.input;
+      break;
+    }
     messages.push({ role: "assistant", content: data.content });
+    if (data.stop_reason === "pause_turn") continue;
+    // Finished without filing: ask again, this time forcing the tool.
+    messages.push({ role: "user", content: [{ type: "text", text: "Now file your findings with the file_report tool." }] });
+    const forced = await callClaude(apiKey, messages, true);
+    allBlocks.push(...forced.content);
+    const fb = forced.content.find((b) => b.type === "tool_use" && b.name === "file_report");
+    if (fb?.input) report = fb.input;
+    break;
   }
+  if (!report) {
+    // Last-ditch: a model that typed JSON as text anyway
+    const text = allBlocks.filter((b) => b.type === "text").map((b) => b.text).join("");
+    report = extractJson(text);
+  }
+  if (!report) throw new Error("The investigator lost the case file. Try again.");
 
   const searches: string[] = [];
   const found = new Map<string, string>();
   const cited = new Map<string, string>();
   for (const b of allBlocks) {
-    if (b.type === "server_tool_use" && b.input?.query) searches.push(b.input.query);
+    if (b.type === "server_tool_use" && b.input?.query) searches.push(String(b.input.query));
     if (b.type === "web_search_tool_result" && Array.isArray(b.content)) {
       for (const r of b.content as { url?: string; title?: string }[]) if (r.url) found.set(r.url, r.title || r.url);
     }
     for (const c of b.citations ?? []) if (c.url) cited.set(c.url, c.title || c.url);
   }
-  const text = allBlocks.filter((b) => b.type === "text").map((b) => b.text).join("");
   const sources = [...(cited.size ? cited : found)].slice(0, 6).map(([url, title]) => ({ url, title }));
-  return { text, searches, sources };
+  return { report, searches, sources };
 }
 
 function toAnalysis(run: RawRun, input: AnalyzeInput, provider: "claude"): Analysis {
-  const json = extractJson(run.text);
-  if (!json) throw new Error(`${provider} got distracted and forgot to file its report`);
+  const json = run.report;
   const score = clampScore(json.larp_score);
+  const handle = typeof json.username === "string" && json.username.trim() ? json.username : null;
   return {
-    username: (json.username as string) || input.usernameHint || null,
+    username: handle || input.usernameHint || null,
     platform: input.platformHint && input.platformHint !== "unknown" ? input.platformHint : normPlatform(json.platform),
     larpScore: score,
     verdictTitle: String(json.verdict_title || (score >= 50 ? "LARP DETECTED" : "Surprisingly real")),
@@ -177,7 +223,13 @@ function toAnalysis(run: RawRun, input: AnalyzeInput, provider: "claude"): Analy
 export async function analyzePost(input: AnalyzeInput): Promise<Analysis> {
   const claudeKey = process.env.ANTHROPIC_API_KEY;
   if (!claudeKey) return vibesMode(input);
-  return toAnalysis(await runClaude(input, claudeKey), input, "claude");
+  try {
+    return toAnalysis(await runClaude(input, claudeKey), input, "claude");
+  } catch (e) {
+    // One retry: the internet is flaky and so are LARPers
+    console.error("First investigation failed, retrying:", e);
+    return toAnalysis(await runClaude(input, claudeKey), input, "claude");
+  }
 }
 
 // No API key? Still put on a show for the demo.
