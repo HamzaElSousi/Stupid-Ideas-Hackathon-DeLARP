@@ -350,3 +350,137 @@ body.siren::after {
 .list li { border-top: 2px solid var(--line); }
 .who b::before { content: "WANTED "; font-family: var(--display); font-weight: 400; color: var(--red); letter-spacing: 1px; margin-right: 4px; }
 .nums .reward { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--ink); background: var(--hi); padding: 0 6px; }
+
+/* ===================== THE STAGE: interrogation + verdict ===================== */
+.paste-hint { margin: 0 0 14px; font-size: 13px; background: var(--hi); border: 2px solid var(--line); padding: 8px 10px; font-weight: 700; }
+kbd { font: inherit; font-size: 12px; background: var(--ink); color: var(--paper); padding: 1px 6px; border-radius: 3px; }
+
+.stage {
+  position: fixed; inset: 0; z-index: 55; overflow-y: auto;
+  display: flex; align-items: center; justify-content: center; padding: 24px 16px;
+  background: radial-gradient(ellipse at 50% 0%, #2b2722 0%, #0d0c0b 70%);
+  color: #f3eee2; animation: stage-in .25s ease-out;
+}
+@keyframes stage-in { from { opacity: 0; } }
+.stage-kicker { text-transform: uppercase; letter-spacing: 3px; font-size: 12px; color: #a59d8d; margin: 0 0 8px; }
+
+/* interrogation */
+.interrogation { position: relative; width: min(640px, 100%); text-align: center; padding-top: 120px; }
+.lamp { position: absolute; top: -24px; left: 50%; width: 2px; height: 90px; background: #555; transform-origin: top center; animation: swing 2.4s ease-in-out infinite; }
+.lamp::before { content: ""; position: absolute; bottom: -18px; left: -30px; width: 62px; height: 30px; background: #1c1a17; border-radius: 40px 40px 6px 6px; border-bottom: 4px solid var(--hi); }
+.lamp::after { content: ""; position: absolute; top: 108px; left: -220px; width: 440px; height: 520px; background: radial-gradient(ellipse at 50% 0%, rgba(255,230,59,.22), transparent 65%); clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%); pointer-events: none; }
+@keyframes swing { 0%,100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+.stage-title { font-family: var(--display); font-weight: 400; font-size: clamp(36px, 7vw, 64px); line-height: 1; text-transform: uppercase; margin: 0 0 24px; }
+.stage-title span { color: var(--hi); }
+.stage-steps { list-style: none; padding: 0; margin: 0 auto; display: grid; gap: 8px; text-align: left; width: fit-content; font-size: 16px; }
+.stage-steps li { opacity: .25; transition: opacity .25s; }
+.stage-steps li::before { content: "☐ "; }
+.stage-steps li.done { opacity: .7; }
+.stage-steps li.done::before { content: "☑ "; color: #6be08d; }
+.stage-steps li.now { opacity: 1; color: var(--hi); font-weight: 700; }
+.stage-steps li.now::before { content: "🔎 "; }
+.stage-steps li.now::after { content: "…"; animation: blink 1s infinite; }
+
+/* courtroom verdict */
+.courtroom { width: min(760px, 100%); text-align: center; }
+.defendant { font-size: clamp(20px, 4vw, 30px); font-weight: 700; margin: 0; }
+.gavel { font-size: 84px; line-height: 1; margin: 6px 0 -8px; animation: gavel .6s .1s cubic-bezier(.3,1.6,.4,1) both; transform-origin: 80% 80%; }
+@keyframes gavel { 0% { transform: rotate(-70deg) translateY(-40px); opacity: 0; } 60% { transform: rotate(18deg); opacity: 1; } 100% { transform: rotate(0); } }
+.big-stamp {
+  display: inline-block; font-family: var(--display); font-size: clamp(76px, 18vw, 168px); line-height: .9;
+  padding: 4px 22px 10px; border: 8px double currentColor; transform: rotate(-4deg);
+  animation: big-stamp .45s .35s cubic-bezier(.3,1.8,.5,1) both;
+}
+@keyframes big-stamp { from { transform: rotate(-4deg) scale(3.2); opacity: 0; } }
+.stage.guilty .big-stamp { color: var(--red); text-shadow: 0 0 40px rgba(226,35,26,.45); }
+.stage.innocent .big-stamp { color: #4fd17a; font-size: clamp(60px, 13vw, 120px); text-shadow: 0 0 40px rgba(79,209,122,.35); }
+.charge { font-size: 18px; margin: 14px 0 6px; color: #d9d2c1; animation: enter .4s .7s both; }
+.stage-score { display: flex; justify-content: center; align-items: center; gap: 14px; flex-wrap: wrap; margin: 8px 0 4px; animation: enter .4s .8s both; }
+.stage-score b { font-family: var(--display); font-weight: 400; font-size: 64px; line-height: 1; }
+.stage.guilty .stage-score b { color: var(--red); }
+.stage.innocent .stage-score b { color: #4fd17a; }
+.stage-score span { background: var(--hi); color: var(--ink); font-weight: 700; text-transform: uppercase; padding: 4px 10px; transform: rotate(-2deg); }
+.stage-headline { font-family: var(--display); font-size: clamp(22px, 4vw, 30px); text-transform: uppercase; margin: 6px 0 0; color: #f3eee2; animation: enter .4s .9s both; }
+.roast {
+  margin: 22px auto 0; max-width: 640px; text-align: left; background: #f3eee2; color: var(--ink);
+  padding: 16px 18px; font-size: 18px; font-weight: 700; line-height: 1.45; min-height: 96px;
+  border: 3px solid var(--hi); box-shadow: 8px 8px 0 var(--hi); animation: enter .4s .85s both;
+}
+.roast .label { display: block; color: var(--red); }
+.stage.innocent .roast { font-family: var(--display); font-weight: 400; font-size: 46px; text-align: center; border-color: #4fd17a; box-shadow: 8px 8px 0 #4fd17a; }
+.stage.innocent .roast .label { color: var(--green); font-family: var(--mono); font-weight: 700; }
+.caret { display: inline-block; width: 10px; height: 1em; background: currentColor; vertical-align: -2px; margin-left: 2px; animation: blink .8s steps(1) infinite; }
+.stage-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 24px; animation: enter .4s 1s both; }
+.stage-actions button, .stage-link {
+  min-height: 48px; padding: 10px 16px; font-weight: 700; font-size: 15px; text-decoration: none;
+  background: transparent; color: #f3eee2; border: 2px solid #f3eee2; transition: transform .08s, background-color .15s;
+}
+.stage-actions button:hover, .stage-link:hover { background: rgba(255,255,255,.1); transform: translateY(-2px); }
+.stage-actions button:active { transform: translateY(1px); }
+.stage-actions .primary { background: var(--hi); color: var(--ink); border-color: var(--hi); }
+.stage-actions .primary:hover { background: #fff27a; }
+.stage-link { display: inline-flex; align-items: center; background: var(--red); border-color: var(--red); }
+.stage :focus-visible { outline-color: var(--hi); box-shadow: none; }
+
+/* keep FARTY PARTY clickable during the verdict, because obviously */
+.farty { z-index: 70; }
+.fart-layer { z-index: 69; }
+
+/* ===================== nav as real buttons ===================== */
+.masthead nav { gap: 10px; }
+.masthead nav a.navbtn {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 8px 14px;
+  border: 2px solid var(--line); background: #fffdf6; box-shadow: 3px 3px 0 var(--line);
+  background-image: none; transition: transform .08s, box-shadow .08s, background-color .15s;
+}
+.masthead nav a.navbtn:hover { background: var(--hi); transform: translate(-1px,-1px); box-shadow: 4px 4px 0 var(--line); }
+.masthead nav a.navbtn:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 var(--line); }
+.masthead nav a.navbtn.hot { background: var(--red); color: #fff; }
+.masthead nav a.navbtn.hot:hover { background: #ff3b30; }
+@media (max-width: 560px) { .masthead nav a.navbtn { padding: 6px 10px; font-size: 12px; } }
+
+/* ===================== DO NOT PRESS ===================== */
+.farty-wrap { position: fixed; right: 20px; bottom: 20px; z-index: 70; display: flex; flex-direction: column; align-items: center; }
+.farty {
+  position: relative; right: auto; bottom: auto; width: 136px; height: 136px; font-size: 24px;
+  background: radial-gradient(circle at 35% 28%, #ff6a5f, var(--red) 55%, #9b130c);
+  color: #fff; text-shadow: 2px 2px 0 rgba(0,0,0,.35);
+  box-shadow: 0 8px 0 #5c0b06, 0 0 0 6px var(--hi), 0 0 0 9px var(--ink), 0 14px 30px rgba(0,0,0,.35);
+  animation: tempt 1.6s ease-in-out infinite;
+}
+.farty-icon { font-size: 26px; line-height: 1; margin-bottom: 2px; text-shadow: none; }
+.farty:hover { transform: scale(1.07) rotate(-3deg); animation-play-state: paused; }
+.farty:active { transform: translateY(6px) scale(.95); box-shadow: 0 2px 0 #5c0b06, 0 0 0 6px var(--hi), 0 0 0 9px var(--ink); }
+@keyframes tempt { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+.farty-sticker { position: absolute; top: -14px; left: -46px; z-index: 1; background: var(--hi); color: var(--ink); border: 2px solid var(--ink); font-weight: 700; font-size: 12px; padding: 2px 8px; transform: rotate(-12deg); white-space: nowrap; }
+.farty-count { margin-top: 14px; white-space: nowrap; font-style: normal; font-size: 11px; background: var(--ink); color: var(--hi); padding: 2px 8px; }
+@media (max-width: 560px) {
+  .farty-wrap { right: 12px; bottom: 12px; }
+  .farty { width: 92px; height: 92px; font-size: 16px; }
+  .farty-icon { font-size: 18px; }
+  .farty-sticker { left: -30px; font-size: 10px; }
+  .farty-count { display: none; }
+}
+
+/* the slap */
+.slap {
+  position: absolute; left: 50%; top: 50%; display: flex; flex-direction: column; align-items: center;
+  font-family: var(--display); line-height: .9; text-transform: uppercase; white-space: nowrap;
+  color: #a6ff63; -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; text-shadow: 10px 10px 0 var(--ink);
+  animation: slap .9s cubic-bezier(.2,1.6,.4,1) forwards;
+}
+.slap span:first-child { font-size: clamp(40px, 9vw, 110px); color: var(--hi); }
+.slap span:last-child { font-size: clamp(56px, 14vw, 180px); }
+@keyframes slap {
+  0% { transform: translate(-50%,-50%) rotate(-25deg) scale(4); opacity: 0; }
+  25% { transform: translate(-50%,-50%) rotate(8deg) scale(.9); opacity: 1; }
+  35% { transform: translate(-50%,-50%) rotate(8deg) scale(1); }
+  75% { opacity: 1; }
+  100% { transform: translate(-50%,-50%) rotate(8deg) scale(1.05); opacity: 0; }
+}
+.callout { top: 18%; }
+.slap span:first-child { text-transform: none; }
+.farty { z-index: 1; }
+.farty-sticker { z-index: 3; top: -26px; left: -40px; }
+.farty-wrap { right: 26px; bottom: 26px; }
+.callout { top: auto; bottom: 10%; font-size: clamp(26px, 5vw, 56px); white-space: normal; width: min(90vw, 900px); }

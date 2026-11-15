@@ -34,7 +34,7 @@ const SYSTEM = `You are DeLARP, a forensic investigator that exposes tech bros w
 You receive a post as text and/or a screenshot. Your job:
 1. Identify the author's username/handle and the platform (linkedin, x, or unknown).
 2. Extract the concrete claims (funding raised, revenue, users, titles, "founder of", awards, exits, followers...).
-3. USE WEB SEARCH to look for real proof of the important claims: the company website, Crunchbase-style funding news, press, GitHub, product pages, app store listings. Do 2-4 focused searches. If you can't find the person, search the company/product instead.
+3. USE WEB SEARCH to look for real proof of the important claims: the company website, Crunchbase-style funding news, press, GitHub, product pages, app store listings. Do at most 2 quick, focused searches, then file the report. Speed matters: this runs live on stage. If you can't find the person, search the company/product instead.
 4. Score how much of a LARP it is from 0 to 100:
    - 0-49: claims check out or it's a normal humble post. Real.
    - 50-100: big claims, no proof, vaporware, buzzword soup, "stealth", "building in public" with nothing public.
@@ -42,7 +42,7 @@ You receive a post as text and/or a screenshot. Your job:
 5. If the score is 50 or more, write ONE LinkedIn/X reply comment that is backhanded: sweet and supportive on the surface, quietly devastating underneath. It should read like a real comment someone could post. Rules for the comment: under 280 characters, no slurs, nothing about appearance, race, gender, religion, health or family, no threats, no profanity. Roast the claim, not the human. Examples of the tone:
    - "Congrats on the $10M raise! Couldn't find the announcement anywhere, must be really stealth. Can't wait to see the product someday 🙏"
    - "So inspiring that you've helped 10,000 founders. Would love to meet one of them!"
-6. Translate 2-4 buzzwords from the post into what they actually mean (funny, short).
+6. Keep it short: at most 3 claims, 3 red flags. Translate 2-3 buzzwords from the post into what they actually mean (funny, short).
 
 Be funny everywhere except the evidence field, which must be honest about what you did or didn't find.
 
@@ -135,10 +135,10 @@ async function callClaude(apiKey: string, messages: unknown[], forceReport: bool
     headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
     body: JSON.stringify({
       model: process.env.ANTHROPIC_MODEL || "claude-haiku-5-5",
-      max_tokens: 3000,
+      max_tokens: 1200,
       system: SYSTEM,
       messages,
-      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 4 }, REPORT_TOOL],
+      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 2 }, REPORT_TOOL],
       tool_choice: forceReport ? { type: "tool", name: "file_report" } : { type: "auto" },
     }),
   });

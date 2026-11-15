@@ -147,22 +147,36 @@ export default function FartyParty() {
           </span>
         ))}
         {callout && (
-          <div className="callout" key={combo}>
-            {callout}
-            {combo > 1 && <small>COMBO x{combo}</small>}
-          </div>
+          <>
+            <div className="slap" key={`slap-${combo}`}>
+              <span>DeLARPy</span>
+              <span>FARTY PARTY</span>
+            </div>
+            <div className="callout" key={combo}>
+              {callout}
+              {combo > 1 && <small>COMBO x{combo}</small>}
+            </div>
+          </>
         )}
       </div>
-      <button
-        className="farty"
-        onClick={fart}
-        title="Does absolutely nothing useful"
-        aria-label={`Farty party. Plays a fart sound.${globalFarts !== null ? ` ${globalFarts} global farts so far.` : ""}`}
-      >
-        <span>FARTY</span>
-        <span>PARTY</span>
-        {globalFarts !== null && <em>{globalFarts.toLocaleString()} global farts</em>}
-      </button>
+      <div className="farty-wrap">
+        <span className="farty-sticker" aria-hidden>
+          seriously, don&apos;t
+        </span>
+        <button
+          className="farty"
+          onClick={fart}
+          title="Does absolutely nothing useful"
+          aria-label={`Do not press. Plays a fart sound.${globalFarts !== null ? ` ${globalFarts} global presses so far.` : ""}`}
+        >
+          <span className="farty-icon" aria-hidden>
+            🚫
+          </span>
+          <span>DO NOT</span>
+          <span>PRESS</span>
+        </button>
+        {globalFarts !== null && <em className="farty-count">{globalFarts.toLocaleString()} people pressed it anyway</em>}
+      </div>
     </>
   );
 }

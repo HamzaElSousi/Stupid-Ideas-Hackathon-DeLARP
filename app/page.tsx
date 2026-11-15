@@ -146,12 +146,16 @@ export default function Home() {
   const [dragging, setDragging] = useState(false);
   const [sampleIdx, setSampleIdx] = useState(0);
   const [caseNo, setCaseNo] = useState("0000");
+  const [stageOpen, setStageOpen] = useState(false);
+  const [typed, setTyped] = useState("");
+  const textRef = useRef(text);
+  textRef.current = text;
   const fileRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!loading) return;
-    const t = setInterval(() => setLine((l) => Math.min(l + 1, LOADING_LINES.length - 1)), 1300);
+    const t = setInterval(() => setLine((l) => Math.min(l + 1, LOADING_LINES.length - 1)), 900);
     return () => clearInterval(t);
   }, [loading]);
 
@@ -161,18 +165,34 @@ export default function Home() {
       const file = [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith("image/"));
       if (file) {
         e.preventDefault();
-        setImage(await shrinkImage(file));
+        const data = await shrinkImage(file);
+        setImage(data);
+        // Paste a screenshot with an empty text box: skip straight to the investigation.
+        if (!textRef.current.trim()) investigate({ image: data });
       }
     };
     window.addEventListener("paste", onPaste);
     return () => window.removeEventListener("paste", onPaste);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Esc closes the verdict
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !loading) setStageOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [loading]);
 
   async function onFile(file?: File) {
     if (file && file.type.startsWith("image/")) setImage(await shrinkImage(file));
   }
 
-  async function investigate() {
+  async function investigate(override?: { image?: string | null }) {
+    const img = override && "image" in override ? override.image : image;
+    setStageOpen(true);
+    setTyped("");
     setLoading(true);
     setError(null);
     setResult(null);
@@ -184,7 +204,7 @@ export default function Home() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           text,
-          image,
+          image: img,
           username: username || undefined,
           platform: platform === "auto" ? undefined : platform,
         }),
@@ -201,12 +221,10 @@ export default function Home() {
           setTimeout(() => document.body.classList.remove("siren"), 2000);
         }
       }
-      setTimeout(() => {
-        resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-        resultRef.current?.focus({ preventScroll: true });
-      }, 50);
+
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+      setStageOpen(false);
     } finally {
       setLoading(false);
     }
@@ -229,6 +247,38 @@ export default function Home() {
     return () => clearInterval(t);
   }, [result]);
 
+  useEffect(() => {
+    if (!result) return;
+    const full = result.comment;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return setTyped(full);
+    let i = 0;
+    let cleanup = () => {};
+    const start = setTimeout(() => {
+      const t = setInterval(() => {
+        i += 2;
+        setTyped(full.slice(0, i));
+        if (i >= full.length) clearInterval(t);
+      }, 18);
+      cleanup = () => clearInterval(t);
+    }, 900);
+    return () => {
+      clearTimeout(start);
+      cleanup();
+    };
+  }, [result]);
+
+  function nextSuspect() {
+    setStageOpen(false);
+    setResult(null);
+    setText("");
+    setImage(null);
+    setUsername("");
+    setPlatform("auto");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  const handle = (result?.username || username || "").replace(/^@/, "");
+
   return (
     <div className="page">
       <section className="hero">
@@ -244,6 +294,9 @@ export default function Home() {
 
       <section className="evidence">
         <div className="tab">EXHIBIT A</div>
+        <p className="paste-hint">
+          <kbd>Ctrl</kbd>+<kbd>V</kbd> a screenshot anywhere on this page and the investigation starts by itself.
+        </p>
         <label className="label" htmlFor="post">The post</label>
         <textarea
           id="post"
@@ -340,7 +393,7 @@ export default function Home() {
           </div>
         </div>
 
-        <button className="go" disabled={loading || (!text.trim() && !image)} onClick={investigate}>
+        <button className="go" disabled={loading || (!text.trim() && !image)} onClick={() => investigate()}>
           {loading ? "INVESTIGATING…" : "DeLARP THIS 🔎"}
         </button>
         <div aria-live="polite">
@@ -535,6 +588,84 @@ export default function Home() {
             <p className="note">Investigated by Claude Haiku with live web search.</p>
           )}
         </section>
+      )}
+      {stageOpen && (loading || result) && (
+        <div
+          className={`stage ${loading ? "is-loading" : result && result.larpScore >= 50 ? "guilty" : "innocent"}`}
+          role="dialog"
+          aria-modal="true"
+          aria-label={loading ? "Investigation in progress" : "Verdict"}
+        >
+          {loading ? (
+            <div className="interrogation">
+              <div className="lamp" aria-hidden />
+              <p className="stage-kicker">Interrogation room 3 · case #{caseNo === "0000" ? "????" : caseNo}</p>
+              <h2 className="stage-title">
+                Investigating <span>{username ? `@${username.replace(/^@/, "")}` : "the suspect"}</span>
+              </h2>
+              <ol className="stage-steps" aria-live="polite">
+                {LOADING_LINES.map((l, i) => (
+                  <li key={l} className={i < line ? "done" : i === line ? "now" : ""}>
+                    {l}
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : (
+            result && (
+              <div className="courtroom">
+                <p className="stage-kicker">The Court of Receipts finds</p>
+                <p className="defendant">@{handle || "anonymous"}</p>
+                <div className="gavel" aria-hidden>
+                  {isLarp ? "🔨" : "🫡"}
+                </div>
+                <div className="big-stamp">{isLarp ? "GUILTY" : "REAL TALK."}</div>
+                <p className="charge">
+                  {isLarp ? "of LARPing in the first degree" : "Certified not a LARPer. Rare. Respect."}
+                </p>
+                <div className="stage-score">
+                  <b>{shown}%</b>
+                  <span>{tierOf(result.larpScore)}</span>
+                </div>
+                {isLarp && <p className="stage-headline">&ldquo;{result.verdictTitle}&rdquo;</p>}
+                <blockquote className="roast">
+                  <span className="label">{isLarp ? "Sentenced to this comment" : "Official response"}</span>
+                  {typed}
+                  <i className="caret" aria-hidden />
+                </blockquote>
+                <div className="stage-actions">
+                  <button
+                    type="button"
+                    className="primary"
+                    onClick={() => {
+                      navigator.clipboard.writeText(result.comment);
+                      setCopied(true);
+                    }}
+                  >
+                    {copied ? "Copied. Go." : isLarp ? "📋 Copy the roast" : "📋 Copy"}
+                  </button>
+                  <button type="button" onClick={nextSuspect}>
+                    ⏭ Next suspect
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStageOpen(false);
+                      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+                    }}
+                  >
+                    🗂 Full case file
+                  </button>
+                  {isLarp && (
+                    <Link href="/larp-list" className="stage-link">
+                      🚨 LARP List
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )
+          )}
+        </div>
       )}
     </div>
   );
