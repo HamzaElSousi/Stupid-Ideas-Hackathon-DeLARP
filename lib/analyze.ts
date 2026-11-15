@@ -91,7 +91,7 @@ const REPORT_TOOL = {
       platform: { type: "string", enum: ["linkedin", "x", "unknown"] },
       larp_score: { type: "integer", minimum: 0, maximum: 100 },
       verdict_title: { type: "string", description: "Short dramatic headline, max 8 words" },
-      summary: { type: "string", description: "1-2 funny sentences on what you found" },
+      summary: { type: "string", description: "ONE short funny sentence, max 25 words" },
       claims: {
         type: "array",
         items: {
@@ -136,7 +136,7 @@ async function callClaude(apiKey: string, messages: unknown[], forceReport: bool
     headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
     body: JSON.stringify({
       model: process.env.ANTHROPIC_MODEL || "claude-haiku-5-5",
-      max_tokens: 1200,
+      max_tokens: 2500,
       system: SYSTEM,
       messages,
       tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 2 }, REPORT_TOOL],
