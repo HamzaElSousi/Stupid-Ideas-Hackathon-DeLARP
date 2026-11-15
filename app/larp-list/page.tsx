@@ -29,7 +29,7 @@ export default async function LarpListPage() {
         <h1>
           The <mark>LARP</mark> List
         </h1>
-        <p className="lede">Everyone who scored 50% or higher. Sorted by LARP score × number of times caught.</p>
+        <p className="lede">Everyone who scored 50% or higher. Sorted by LARP score × times caught. If you&apos;re on here, the fastest way off is shipping something.</p>
       </section>
 
       <section className="metrics">
@@ -75,7 +75,7 @@ export default async function LarpListPage() {
       <section className="list">
         {larpers.length === 0 ? (
           <p className="empty">
-            Nobody on the list yet. Suspiciously clean. <Link href="/">Go catch someone →</Link>
+            Nobody on the list yet. Either the internet got honest overnight, or nobody has looked. <Link href="/">Go catch someone →</Link>
           </p>
         ) : (
           <ol>
@@ -90,6 +90,7 @@ export default async function LarpListPage() {
                 </div>
                 <div className="nums">
                   <b>{l.larpScore}%</b>
+                  <span className="reward">reward: 0 aura</span>
                   <span>
                     {l.offenses} strike{l.offenses > 1 ? "s" : ""} · {ago(l.lastCaught)}
                   </span>

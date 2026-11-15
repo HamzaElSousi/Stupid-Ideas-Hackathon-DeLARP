@@ -19,7 +19,7 @@ export type Analysis = {
   sources: { title: string; url: string }[];
   searches: string[];
   mode: "ai" | "vibes";
-  provider: "gemini" | "claude" | "vibes";
+  provider: "claude" | "vibes";
 };
 
 export type AnalyzeInput = {
@@ -100,45 +100,7 @@ function buildPrompt(input: AnalyzeInput) {
   return prompt;
 }
 
-// ---------- Gemini (primary) with Google Search grounding ----------
-async function runGemini(input: AnalyzeInput, apiKey: string): Promise<RawRun> {
-  const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
-  const parts: unknown[] = [];
-  if (input.image) parts.push({ inline_data: { mime_type: input.image.mediaType, data: input.image.data } });
-  parts.push({ text: buildPrompt(input) });
-
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-    method: "POST",
-    headers: { "x-goog-api-key": apiKey, "content-type": "application/json" },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: SYSTEM }] },
-      contents: [{ role: "user", parts }],
-      tools: [{ google_search: {} }],
-      generationConfig: { temperature: 0.9, maxOutputTokens: 3000 },
-    }),
-  });
-  if (!res.ok) throw new Error(`Gemini API ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  const data = (await res.json()) as {
-    candidates?: {
-      content?: { parts?: { text?: string }[] };
-      groundingMetadata?: { webSearchQueries?: string[]; groundingChunks?: { web?: { uri?: string; title?: string } }[] };
-    }[];
-  };
-  const cand = data.candidates?.[0];
-  const text = (cand?.content?.parts ?? []).map((p) => p.text ?? "").join("");
-  if (!text) throw new Error("Gemini returned nothing");
-  const gm = cand?.groundingMetadata;
-  const seen = new Set<string>();
-  const sources = (gm?.groundingChunks ?? [])
-    .map((c) => c.web)
-    .filter((w): w is { uri: string; title?: string } => Boolean(w?.uri))
-    .filter((w) => !seen.has(w.uri) && seen.add(w.uri))
-    .slice(0, 6)
-    .map((w) => ({ url: w.uri, title: w.title || w.uri }));
-  return { text, searches: gm?.webSearchQueries ?? [], sources };
-}
-
-// ---------- Claude (fallback) with web search ----------
+// ---------- Claude Haiku with web search ----------
 async function runClaude(input: AnalyzeInput, apiKey: string): Promise<RawRun> {
   const userContent: unknown[] = [];
   if (input.image) {
@@ -161,7 +123,7 @@ async function runClaude(input: AnalyzeInput, apiKey: string): Promise<RawRun> {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5",
+        model: process.env.ANTHROPIC_MODEL || "claude-haiku-5-5",
         max_tokens: 3000,
         system: SYSTEM,
         messages,
@@ -190,7 +152,7 @@ async function runClaude(input: AnalyzeInput, apiKey: string): Promise<RawRun> {
   return { text, searches, sources };
 }
 
-function toAnalysis(run: RawRun, input: AnalyzeInput, provider: "gemini" | "claude"): Analysis {
+function toAnalysis(run: RawRun, input: AnalyzeInput, provider: "claude"): Analysis {
   const json = extractJson(run.text);
   if (!json) throw new Error(`${provider} got distracted and forgot to file its report`);
   const score = clampScore(json.larp_score);
@@ -211,29 +173,11 @@ function toAnalysis(run: RawRun, input: AnalyzeInput, provider: "gemini" | "clau
   };
 }
 
-// Gemini first, Claude if Gemini is missing or fails, vibes mode if neither key is set.
+// Claude investigates; with no key, vibes mode keeps the demo alive.
 export async function analyzePost(input: AnalyzeInput): Promise<Analysis> {
-  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
   const claudeKey = process.env.ANTHROPIC_API_KEY;
-  const errors: string[] = [];
-
-  if (geminiKey) {
-    try {
-      return toAnalysis(await runGemini(input, geminiKey), input, "gemini");
-    } catch (e) {
-      errors.push(e instanceof Error ? e.message : String(e));
-      console.error("Gemini failed, falling back to Claude:", e);
-    }
-  }
-  if (claudeKey) {
-    try {
-      return toAnalysis(await runClaude(input, claudeKey), input, "claude");
-    } catch (e) {
-      errors.push(e instanceof Error ? e.message : String(e));
-    }
-  }
-  if (errors.length) throw new Error(`Both investigators failed. ${errors.join(" | ")}`);
-  return vibesMode(input);
+  if (!claudeKey) return vibesMode(input);
+  return toAnalysis(await runClaude(input, claudeKey), input, "claude");
 }
 
 // No API key? Still put on a show for the demo.

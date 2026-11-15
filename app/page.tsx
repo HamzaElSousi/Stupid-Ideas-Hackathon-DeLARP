@@ -16,7 +16,13 @@ const LOADING_LINES = [
   "Locating the product. Still locating",
 ];
 
-const SAMPLE = `Thrilled and humbled to announce that after 3 months in stealth, my AI-powered Web3 platform has hit $10M ARR 🚀
+type Sample = { text: string; username: string; platform: "linkedin" | "x" };
+
+const LARPS: Sample[] = [
+  {
+    username: "chad.ventures",
+    platform: "linkedin",
+    text: `Thrilled and humbled to announce that after 3 months in stealth, my AI-powered Web3 platform has hit $10M ARR 🚀
 
 As a serial entrepreneur and visionary, I've learned that success is a mindset. We're disrupting the $4 trillion "doing stuff" industry.
 
@@ -24,7 +30,89 @@ Grateful for my team (me). DM me if you want to invest before our Series A.
 
 Agree? 👇
 
-#founder #AI #hustle #grindset`;
+#founder #AI #hustle #grindset`,
+  },
+  {
+    username: "0xGrindLord",
+    platform: "x",
+    text: `Quit my 9-5 to go full-time on my AI agent startup.
+
+Day 47:
+- $0 revenue
+- $1M in vibes
+- 3 cofounders (2 are GPTs)
+- pre-seed closing soon (my uncle is thinking about it)
+
+Building in public. Most of you won't understand this yet. 🧵👇`,
+  },
+  {
+    username: "brayden.hustleworth",
+    platform: "linkedin",
+    text: `My 6-year-old asked me what I do.
+
+I said: Founder. CEO. Investor. Advisor. Thought Leader. Keynote Speaker.
+
+He asked what my company makes.
+
+I stayed silent.
+
+That's when I realized: the greatest companies are built in silence. 🤫
+
+I'm humbled to be named a Top 1% Voice (by myself).
+
+Agree?`,
+  },
+  {
+    username: "stealthfounder_",
+    platform: "x",
+    text: `Can't say much yet but we're about to change EVERYTHING.
+
+Stealth mode. Backed by top-tier angels. Ex-FAANG (interviewed once). 10x engineer, 100x visionary.
+
+Waitlist is 50,000 people deep (trust me).
+
+LFG 🚀🚀🚀`,
+  },
+];
+
+const HUMAN: Sample = {
+  username: "priya.codes",
+  platform: "linkedin",
+  text: `Small update: I passed my AWS Solutions Architect exam this week on my third try. It took a lot of evenings after work.
+
+Thanks to my study group for the practice questions and for putting up with me. On to the next one.`,
+};
+
+function tierOf(score: number) {
+  if (score < 20) return "Certified human 🌱";
+  if (score < 50) return "Mild LinkedIn energy";
+  if (score < 70) return "Part-time LARPer";
+  if (score < 90) return "Full-time LARPer";
+  return "LARP Lord 👑";
+}
+
+// A two-tone police siren, synthesized. Wee-woo.
+function playSiren() {
+  const W = window as unknown as { __sirenCtx?: AudioContext; webkitAudioContext?: typeof AudioContext };
+  const Ctx = window.AudioContext || W.webkitAudioContext;
+  if (!Ctx) return;
+  const ctx = (W.__sirenCtx ??= new Ctx());
+  if (ctx.state === "suspended") ctx.resume();
+  const now = ctx.currentTime;
+  const osc = ctx.createOscillator();
+  osc.type = "square";
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.06, now + 0.05);
+  gain.gain.setValueAtTime(0.06, now + 1.7);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.9);
+  for (let i = 0; i < 4; i++) {
+    osc.frequency.setValueAtTime(i % 2 ? 620 : 900, now + i * 0.45);
+  }
+  osc.connect(gain).connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + 2);
+}
 
 // Shrink screenshots so they fit under Vercel's request limit.
 async function shrinkImage(file: File): Promise<string> {
@@ -56,12 +144,14 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [dragging, setDragging] = useState(false);
+  const [sampleIdx, setSampleIdx] = useState(0);
+  const [caseNo, setCaseNo] = useState("0000");
   const fileRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!loading) return;
-    const t = setInterval(() => setLine((l) => Math.min(l + 1, LOADING_LINES.length - 1)), 2600);
+    const t = setInterval(() => setLine((l) => Math.min(l + 1, LOADING_LINES.length - 1)), 1300);
     return () => clearInterval(t);
   }, [loading]);
 
@@ -102,6 +192,15 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something broke. Probably a LARPer.");
       setResult(data);
+      setCaseNo(String(Math.floor(1000 + Math.random() * 9000)));
+      const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (data.larpScore >= 50) {
+        playSiren();
+        if (!calm) {
+          document.body.classList.add("siren");
+          setTimeout(() => document.body.classList.remove("siren"), 2000);
+        }
+      }
       setTimeout(() => {
         resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
         resultRef.current?.focus({ preventScroll: true });
@@ -153,9 +252,32 @@ export default function Home() {
           placeholder="Paste the 'thrilled and humbled' post here…"
           rows={8}
         />
-        <button className="linkish" onClick={() => setText(SAMPLE)} type="button">
-          no post handy? load a certified LARP
-        </button>
+        <div className="samples">
+          <button
+            className="linkish"
+            type="button"
+            onClick={() => {
+              const smp = LARPS[sampleIdx % LARPS.length];
+              setSampleIdx((i) => i + 1);
+              setText(smp.text);
+              setUsername(smp.username);
+              setPlatform(smp.platform);
+            }}
+          >
+            🎲 load a certified LARP
+          </button>
+          <button
+            className="linkish"
+            type="button"
+            onClick={() => {
+              setText(HUMAN.text);
+              setUsername(HUMAN.username);
+              setPlatform(HUMAN.platform);
+            }}
+          >
+            🌱 or a suspiciously normal human
+          </button>
+        </div>
 
         <div
           className={`drop ${dragging ? "over" : ""} ${image ? "has" : ""}`}
@@ -219,7 +341,7 @@ export default function Home() {
         </div>
 
         <button className="go" disabled={loading || (!text.trim() && !image)} onClick={investigate}>
-          {loading ? "INVESTIGATING…" : "DeLARP THIS"}
+          {loading ? "INVESTIGATING…" : "DeLARP THIS 🔎"}
         </button>
         <div aria-live="polite">
           {loading && (
@@ -266,7 +388,11 @@ export default function Home() {
               <div style={{ width: `${result.larpScore}%` }} />
               <span style={{ left: "50%" }} />
             </div>
-            <p className="label">LARP score</p>
+            <div className="meter-scale" aria-hidden>
+              <span>touches grass</span>
+              <span>founder of nothing</span>
+            </div>
+            <p className="tier">{tierOf(result.larpScore)}</p>
           </div>
 
           <h2>{result.verdictTitle}</h2>
@@ -276,6 +402,50 @@ export default function Home() {
             </p>
           )}
           <p className="summary">{result.summary}</p>
+
+          {isLarp ? (
+            <div className="mugshot">
+              <div className="lineup" aria-hidden>
+                <span className="perp">🤵</span>
+                <div className="placard">
+                  <b>DeLARP PD</b>
+                  <span>@{(result.username || "unknown").replace(/^@/, "")}</span>
+                  <span>CASE #{caseNo}</span>
+                </div>
+              </div>
+              <div className="charges">
+                <p className="label">Charged with</p>
+                <ul>
+                  {(result.redFlags.length ? result.redFlags : ["Aggravated buzzword use", "Possession of a vision without a product"])
+                    .slice(0, 4)
+                    .map((f, i) => (
+                      <li key={i}>{f}</li>
+                    ))}
+                </ul>
+                <dl>
+                  <div>
+                    <dt>Bail</dt>
+                    <dd>1 working product</dd>
+                  </div>
+                  <div>
+                    <dt>Aura lost</dt>
+                    <dd>-{(result.larpScore * 1337).toLocaleString()}</dd>
+                  </div>
+                </dl>
+              </div>
+            </div>
+          ) : (
+            <div className="certified">
+              <div className="seal" aria-hidden>
+                <span>CERTIFIED</span>
+                <b>🫡</b>
+                <span>NOT A LARPER</span>
+              </div>
+              <p>
+                Rare sighting: a post with receipts. This person may have touched grass recently. Approach with respect.
+              </p>
+            </div>
+          )}
 
           <div className="comment">
             <p className="label">{isLarp ? "Your AI-generated reply" : "Recommended reply"}</p>
@@ -362,7 +532,7 @@ export default function Home() {
           {result.mode === "vibes" ? (
             <p className="note">Running in vibes mode (no AI key set), so no real search happened.</p>
           ) : (
-            <p className="note">Investigated by {result.provider === "gemini" ? "Gemini + Google Search" : "Claude + web search"}.</p>
+            <p className="note">Investigated by Claude Haiku with live web search.</p>
           )}
         </section>
       )}
