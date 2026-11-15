@@ -11,7 +11,7 @@ const LOADING_LINES = [
   "Reading the post with a straight face",
   "Counting the word 'humbled'",
   "Checking the news for the $10M raise",
-  "Reverse-image searching the beach in Bali",
+  "Reverse-searching the Bali pics",
   "Looking for a single paying customer",
   "Asking their cofounder (their mom)",
   "Locating the receipts. Still locating",
