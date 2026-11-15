@@ -2,6 +2,7 @@ import { analyzePost } from "@/lib/analyze";
 import { addLarper, incrStat, type Platform } from "@/lib/store";
 import { track } from "@/lib/amplitude";
 import { json, preflight } from "@/lib/cors";
+import { auraReport, paymentPlanFor } from "@/lib/aura";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -70,7 +71,20 @@ export async function POST(req: Request) {
       mode: analysis.mode,
     });
 
-    return json({ ...analysis, listed });
+    // Extra fields in the shape AURA DEBT (the Aura Reserve Bank) reads, so their /api/larp plugs straight in.
+    const isLarp = analysis.larpScore >= 50;
+    const report = auraReport(analysis.username || "anonymous", listed);
+    const auraFields = {
+      is_larp: isLarp,
+      larp_score: analysis.larpScore,
+      title: analysis.verdictTitle,
+      // LARPs get fined hard; real ones earn a little aura back. AURA DEBT clamps to -10000..5000.
+      aura_change: isLarp ? -analysis.larpScore * 100 : (100 - analysis.larpScore) * 25,
+      side_quest: isLarp ? paymentPlanFor(analysis.username || analysis.verdictTitle) : null,
+      aura: listed ? report.aura : null,
+    };
+
+    return json({ ...analysis, ...auraFields, listed });
   } catch (e) {
     console.error(e);
     return json({ error: e instanceof Error ? e.message : "Investigation failed" }, { status: 500 });

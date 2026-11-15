@@ -19,6 +19,10 @@ const PAYMENT_PLANS = [
   "Commit to GitHub once. Just once.",
 ];
 
+export function paymentPlanFor(username: string) {
+  return PAYMENT_PLANS[hash(username.replace(/^@/, "").trim().toLowerCase()) % PAYMENT_PLANS.length];
+}
+
 export function auraReport(username: string, larper: Larper | null) {
   const clean = username.replace(/^@/, "").trim();
   const h = hash(clean.toLowerCase());
