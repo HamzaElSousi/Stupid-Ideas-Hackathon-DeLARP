@@ -114,7 +114,7 @@ const REPORT_TOOL = {
       red_flags: { type: "array", items: { type: "string" } },
       comment: { type: ["string", "null"], description: "Backhanded reply if larp_score >= 50, else null" },
     },
-    required: ["platform", "larp_score", "verdict_title", "summary", "claims", "buzzwords", "red_flags"],
+    required: ["platform", "larp_score", "verdict_title", "summary", "claims", "buzzwords", "red_flags", "comment"],
   },
 };
 
