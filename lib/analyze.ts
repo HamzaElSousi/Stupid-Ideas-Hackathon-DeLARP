@@ -19,6 +19,7 @@ export type Analysis = {
   sources: { title: string; url: string }[];
   searches: string[];
   mode: "ai" | "vibes";
+  provider: "gemini" | "claude" | "vibes";
 };
 
 export type AnalyzeInput = {
@@ -88,10 +89,57 @@ function extractJson(text: string): Record<string, unknown> | null {
   }
 }
 
-export async function analyzePost(input: AnalyzeInput): Promise<Analysis> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return vibesMode(input);
+type RawRun = { text: string; searches: string[]; sources: { url: string; title: string }[] };
 
+function buildPrompt(input: AnalyzeInput) {
+  let prompt = "Investigate this post for LARPing.\n";
+  if (input.usernameHint) prompt += `The author's handle is: ${input.usernameHint}\n`;
+  if (input.platformHint && input.platformHint !== "unknown") prompt += `Platform: ${input.platformHint}\n`;
+  if (input.text?.trim()) prompt += `\nPOST TEXT:\n"""\n${input.text.trim().slice(0, 6000)}\n"""\n`;
+  if (input.image) prompt += "\nThe screenshot of the post is attached.";
+  return prompt;
+}
+
+// ---------- Gemini (primary) with Google Search grounding ----------
+async function runGemini(input: AnalyzeInput, apiKey: string): Promise<RawRun> {
+  const model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+  const parts: unknown[] = [];
+  if (input.image) parts.push({ inline_data: { mime_type: input.image.mediaType, data: input.image.data } });
+  parts.push({ text: buildPrompt(input) });
+
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    method: "POST",
+    headers: { "x-goog-api-key": apiKey, "content-type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: SYSTEM }] },
+      contents: [{ role: "user", parts }],
+      tools: [{ google_search: {} }],
+      generationConfig: { temperature: 0.9, maxOutputTokens: 3000 },
+    }),
+  });
+  if (!res.ok) throw new Error(`Gemini API ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  const data = (await res.json()) as {
+    candidates?: {
+      content?: { parts?: { text?: string }[] };
+      groundingMetadata?: { webSearchQueries?: string[]; groundingChunks?: { web?: { uri?: string; title?: string } }[] };
+    }[];
+  };
+  const cand = data.candidates?.[0];
+  const text = (cand?.content?.parts ?? []).map((p) => p.text ?? "").join("");
+  if (!text) throw new Error("Gemini returned nothing");
+  const gm = cand?.groundingMetadata;
+  const seen = new Set<string>();
+  const sources = (gm?.groundingChunks ?? [])
+    .map((c) => c.web)
+    .filter((w): w is { uri: string; title?: string } => Boolean(w?.uri))
+    .filter((w) => !seen.has(w.uri) && seen.add(w.uri))
+    .slice(0, 6)
+    .map((w) => ({ url: w.uri, title: w.title || w.uri }));
+  return { text, searches: gm?.webSearchQueries ?? [], sources };
+}
+
+// ---------- Claude (fallback) with web search ----------
+async function runClaude(input: AnalyzeInput, apiKey: string): Promise<RawRun> {
   const userContent: unknown[] = [];
   if (input.image) {
     userContent.push({
@@ -99,12 +147,7 @@ export async function analyzePost(input: AnalyzeInput): Promise<Analysis> {
       source: { type: "base64", media_type: input.image.mediaType, data: input.image.data },
     });
   }
-  let prompt = "Investigate this post for LARPing.\n";
-  if (input.usernameHint) prompt += `The author's handle is: ${input.usernameHint}\n`;
-  if (input.platformHint && input.platformHint !== "unknown") prompt += `Platform: ${input.platformHint}\n`;
-  if (input.text?.trim()) prompt += `\nPOST TEXT:\n"""\n${input.text.trim().slice(0, 6000)}\n"""\n`;
-  if (input.image) prompt += "\nThe screenshot of the post is attached above.";
-  userContent.push({ type: "text", text: prompt });
+  userContent.push({ type: "text", text: buildPrompt(input) });
 
   const messages: { role: string; content: unknown }[] = [{ role: "user", content: userContent }];
   const allBlocks: ContentBlock[] = [];
@@ -125,10 +168,7 @@ export async function analyzePost(input: AnalyzeInput): Promise<Analysis> {
         tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 4 }],
       }),
     });
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`Claude API ${res.status}: ${err.slice(0, 300)}`);
-    }
+    if (!res.ok) throw new Error(`Claude API ${res.status}: ${(await res.text()).slice(0, 300)}`);
     const data = (await res.json()) as { content: ContentBlock[]; stop_reason: string };
     allBlocks.push(...data.content);
     if (data.stop_reason !== "pause_turn") break;
@@ -136,26 +176,24 @@ export async function analyzePost(input: AnalyzeInput): Promise<Analysis> {
   }
 
   const searches: string[] = [];
-  const sources = new Map<string, string>();
+  const found = new Map<string, string>();
+  const cited = new Map<string, string>();
   for (const b of allBlocks) {
     if (b.type === "server_tool_use" && b.input?.query) searches.push(b.input.query);
     if (b.type === "web_search_tool_result" && Array.isArray(b.content)) {
-      for (const r of b.content as { url?: string; title?: string }[]) {
-        if (r.url && sources.size < 8) sources.set(r.url, r.title || r.url);
-      }
+      for (const r of b.content as { url?: string; title?: string }[]) if (r.url) found.set(r.url, r.title || r.url);
     }
+    for (const c of b.citations ?? []) if (c.url) cited.set(c.url, c.title || c.url);
   }
-  // Prefer sources Claude actually cited
-  const cited = new Map<string, string>();
-  for (const b of allBlocks) for (const c of b.citations ?? []) if (c.url) cited.set(c.url, c.title || c.url);
+  const text = allBlocks.filter((b) => b.type === "text").map((b) => b.text).join("");
+  const sources = [...(cited.size ? cited : found)].slice(0, 6).map(([url, title]) => ({ url, title }));
+  return { text, searches, sources };
+}
 
-  const finalText = allBlocks.filter((b) => b.type === "text").map((b) => b.text).join("");
-  const json = extractJson(finalText);
-  if (!json) throw new Error("The AI investigator got distracted and forgot to file its report. Try again.");
-
+function toAnalysis(run: RawRun, input: AnalyzeInput, provider: "gemini" | "claude"): Analysis {
+  const json = extractJson(run.text);
+  if (!json) throw new Error(`${provider} got distracted and forgot to file its report`);
   const score = clampScore(json.larp_score);
-  const sourceList = [...(cited.size ? cited : sources)].slice(0, 6).map(([url, title]) => ({ url, title }));
-
   return {
     username: (json.username as string) || input.usernameHint || null,
     platform: input.platformHint && input.platformHint !== "unknown" ? input.platformHint : normPlatform(json.platform),
@@ -166,10 +204,36 @@ export async function analyzePost(input: AnalyzeInput): Promise<Analysis> {
     buzzwords: Array.isArray(json.buzzwords) ? (json.buzzwords as Analysis["buzzwords"]).slice(0, 4) : [],
     redFlags: Array.isArray(json.red_flags) ? (json.red_flags as string[]).slice(0, 5) : [],
     comment: score >= 50 ? String(json.comment || "Congrats! Can't wait to see the product someday 🙏") : "REAL TALK.",
-    sources: sourceList,
-    searches,
+    sources: run.sources,
+    searches: run.searches,
     mode: "ai",
+    provider,
   };
+}
+
+// Gemini first, Claude if Gemini is missing or fails, vibes mode if neither key is set.
+export async function analyzePost(input: AnalyzeInput): Promise<Analysis> {
+  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  const claudeKey = process.env.ANTHROPIC_API_KEY;
+  const errors: string[] = [];
+
+  if (geminiKey) {
+    try {
+      return toAnalysis(await runGemini(input, geminiKey), input, "gemini");
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : String(e));
+      console.error("Gemini failed, falling back to Claude:", e);
+    }
+  }
+  if (claudeKey) {
+    try {
+      return toAnalysis(await runClaude(input, claudeKey), input, "claude");
+    } catch (e) {
+      errors.push(e instanceof Error ? e.message : String(e));
+    }
+  }
+  if (errors.length) throw new Error(`Both investigators failed. ${errors.join(" | ")}`);
+  return vibesMode(input);
 }
 
 // No API key? Still put on a show for the demo.
@@ -207,5 +271,6 @@ function vibesMode(input: AnalyzeInput): Analysis {
     sources: [],
     searches: [],
     mode: "vibes",
+    provider: "vibes",
   };
 }

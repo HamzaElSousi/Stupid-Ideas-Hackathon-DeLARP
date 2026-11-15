@@ -304,8 +304,10 @@ export default function Home() {
               </ul>
             </div>
           )}
-          {result.mode === "vibes" && (
-            <p className="note">Running in vibes mode (no ANTHROPIC_API_KEY set), so no real search happened.</p>
+          {result.mode === "vibes" ? (
+            <p className="note">Running in vibes mode (no AI key set), so no real search happened.</p>
+          ) : (
+            <p className="note">Investigated by {result.provider === "gemini" ? "Gemini + Google Search" : "Claude + web search"}.</p>
           )}
         </section>
       )}
