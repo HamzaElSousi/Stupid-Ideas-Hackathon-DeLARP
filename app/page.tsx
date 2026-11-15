@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Analysis } from "@/lib/analyze";
+import EvidenceBoard from "@/components/EvidenceBoard";
 
 type Result = Analysis & { listed: { offenses: number } | null; error?: string };
 
@@ -290,11 +291,11 @@ export default function Home() {
 
   return (
     <div className="desk">
+      <EvidenceBoard />
       <div className="folder">
         <div className="folder-tab">Case 2026-{caseNo === "0000" ? "open" : caseNo}</div>
         <header className="report-head">
           <p className="dept">Department of Receipts, LARP Division</p>
-          <h1>Receipts, please.</h1>
           <p className="lede">
             Paste a LinkedIn or X post bragging about money, a startup, a new job, a relationship or a trip. We look for
             proof that any of it is real, score the LARP, and either sign it off with <b>REAL TALK.</b> or write the
