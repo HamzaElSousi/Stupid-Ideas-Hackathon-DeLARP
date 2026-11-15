@@ -7,13 +7,13 @@ import type { Analysis } from "@/lib/analyze";
 type Result = Analysis & { listed: { offenses: number } | null; error?: string };
 
 const LOADING_LINES = [
-  "Checking Crunchbase for the $10M raise…",
-  "Looking for a single paying customer…",
-  "Searching GitHub for one (1) commit…",
-  "Cross-referencing 'stealth' with 'unemployed'…",
-  "Asking their cofounder (their mom)…",
-  "Counting the word 'humbled'…",
-  "Locating the product. Still locating…",
+  "Reading the post with a straight face",
+  "Counting the word 'humbled'",
+  "Checking the news for the $10M raise",
+  "Looking for a single paying customer",
+  "Searching GitHub for one (1) commit",
+  "Asking their cofounder (their mom)",
+  "Locating the product. Still locating",
 ];
 
 const SAMPLE = `Thrilled and humbled to announce that after 3 months in stealth, my AI-powered Web3 platform has hit $10M ARR 🚀
@@ -61,7 +61,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!loading) return;
-    const t = setInterval(() => setLine((l) => (l + 1) % LOADING_LINES.length), 1800);
+    const t = setInterval(() => setLine((l) => Math.min(l + 1, LOADING_LINES.length - 1)), 2600);
     return () => clearInterval(t);
   }, [loading]);
 
@@ -102,7 +102,10 @@ export default function Home() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something broke. Probably a LARPer.");
       setResult(data);
-      setTimeout(() => resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+      setTimeout(() => {
+        resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        resultRef.current?.focus({ preventScroll: true });
+      }, 50);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -111,6 +114,21 @@ export default function Home() {
   }
 
   const isLarp = result ? result.larpScore >= 50 : false;
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    if (!result) return;
+    const target = result.larpScore;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return setShown(target);
+    let n = 0;
+    setShown(0);
+    const t = setInterval(() => {
+      n = Math.min(target, n + Math.max(1, Math.round(target / 25)));
+      setShown(n);
+      if (n >= target) clearInterval(t);
+    }, 30);
+    return () => clearInterval(t);
+  }, [result]);
 
   return (
     <div className="page">
@@ -141,6 +159,15 @@ export default function Home() {
 
         <div
           className={`drop ${dragging ? "over" : ""} ${image ? "has" : ""}`}
+          role="button"
+          tabIndex={0}
+          aria-label={image ? "Screenshot attached. Press to replace it." : "Attach a screenshot of the post"}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              fileRef.current?.click();
+            }
+          }}
           onClick={() => fileRef.current?.click()}
           onDragOver={(e) => {
             e.preventDefault();
@@ -181,9 +208,9 @@ export default function Home() {
           </div>
           <div className="field">
             <span className="label">Crime scene</span>
-            <div className="seg">
+            <div className="seg" role="group" aria-label="Platform">
               {(["auto", "linkedin", "x"] as const).map((p) => (
-                <button key={p} type="button" className={platform === p ? "on" : ""} onClick={() => setPlatform(p)}>
+                <button key={p} type="button" aria-pressed={platform === p} className={platform === p ? "on" : ""} onClick={() => setPlatform(p)}>
                   {p === "auto" ? "Auto" : p === "linkedin" ? "LinkedIn" : "X"}
                 </button>
               ))}
@@ -194,20 +221,48 @@ export default function Home() {
         <button className="go" disabled={loading || (!text.trim() && !image)} onClick={investigate}>
           {loading ? "INVESTIGATING…" : "DeLARP THIS"}
         </button>
-        {loading && <p className="loading">🔎 {LOADING_LINES[line]}</p>}
-        {error && <p className="error">⚠ {error}</p>}
+        <div aria-live="polite">
+          {loading && (
+            <div className="investigating">
+              <p className="label">Investigation in progress</p>
+              <ol>
+                {LOADING_LINES.map((l, i) => (
+                  <li key={l} className={i < line ? "done" : i === line ? "now" : ""}>
+                    {l}
+                    {i === line ? "…" : ""}
+                  </li>
+                ))}
+              </ol>
+              <div className="bar-loader" />
+            </div>
+          )}
+          {error && (
+            <p className="error" role="alert">
+              <b>⚠</b>
+              <span>
+                {error} <br />
+                <small>Try again, or paste the text instead of a screenshot.</small>
+              </span>
+            </p>
+          )}
+        </div>
       </section>
 
       {result && (
-        <section ref={resultRef} className={`verdict ${isLarp ? "larp" : "real"}`}>
-          <div className="stamp">{isLarp ? "LARP" : "REAL TALK"}</div>
+        <section
+          ref={resultRef}
+          className={`verdict ${isLarp ? "larp" : "real"}`}
+          aria-label={`Verdict: ${isLarp ? "LARP" : "real talk"}, ${result.larpScore} percent`}
+          tabIndex={-1}
+        >
+          <div className="stamp" aria-hidden>{isLarp ? "LARP" : "REAL TALK"}</div>
 
           <div className="score">
             <div className="num">
-              {result.larpScore}
+              {shown}
               <small>%</small>
             </div>
-            <div className="meter">
+            <div className="meter" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={result.larpScore} aria-label="LARP score">
               <div style={{ width: `${result.larpScore}%` }} />
               <span style={{ left: "50%" }} />
             </div>

@@ -235,3 +235,59 @@ body.toxic { background-color: #b8f08a; }
 @media (prefers-reduced-motion: reduce) {
   .ticker div, .farty, body.disco main { animation: none; }
 }
+
+/* ===================== polish pass ===================== */
+
+/* focus you can actually see (keyboard users, judges with tab keys) */
+:focus { outline: none; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; box-shadow: 0 0 0 6px var(--hi); }
+textarea:focus-visible, input:focus-visible { outline-offset: 0; box-shadow: 0 0 0 4px var(--hi); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* 44px touch targets */
+.seg button, .comment button, .remove, .linkish { min-height: 44px; }
+.linkish { display: inline-flex; align-items: center; }
+.masthead nav a { padding: 10px 0; }
+
+/* underline that draws in */
+.masthead nav a { border-bottom: 0; background: linear-gradient(var(--red), var(--red)) left bottom / 0 3px no-repeat; transition: background-size .25s ease; }
+.masthead nav a:hover, .masthead nav a[aria-current="page"] { background-size: 100% 3px; }
+
+/* buttons step on hover, press on click */
+.seg button, .comment button { transition: transform .08s, background-color .15s; }
+.seg button:hover:not(.on) { background: var(--hi); }
+.comment button:hover { transform: translate(-1px,-2px); }
+.comment button:active { transform: translate(1px,1px); }
+
+/* hero enters once */
+.hero > * { animation: enter .7s cubic-bezier(.2,.8,.2,1) both; }
+.hero > *:nth-child(2) { animation-delay: .08s; }
+.hero > *:nth-child(3) { animation-delay: .16s; }
+.evidence, .metrics { animation: enter .7s .22s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes enter { from { opacity: 0; transform: translateY(18px); } }
+
+/* investigation in progress: an evidence checklist instead of a spinner */
+.investigating { margin-top: 18px; border: 2px dashed var(--line); padding: 14px 16px; background: var(--paper); }
+.investigating ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
+.investigating li { display: flex; gap: 10px; align-items: baseline; opacity: .35; transition: opacity .3s; }
+.investigating li.done, .investigating li.now { opacity: 1; }
+.investigating li::before { content: "☐"; font-weight: 700; }
+.investigating li.done::before { content: "☑"; color: var(--green); }
+.investigating li.now::before { content: "⌕"; animation: blink 1s infinite; }
+.investigating .bar-loader { height: 6px; margin-top: 12px; background: repeating-linear-gradient(90deg, var(--ink) 0 14px, transparent 14px 22px); background-size: 44px 100%; animation: march .6s linear infinite; }
+@keyframes march { to { background-position: 44px 0; } }
+
+.error { display: flex; gap: 10px; align-items: flex-start; background: #ffe1df; border: 2px solid var(--red); padding: 12px 14px; color: var(--ink); font-weight: 400; }
+.error b { color: var(--red); }
+
+/* leaderboard rows lift a touch */
+.list li { transition: transform .15s, background-color .15s; padding-left: 6px; padding-right: 6px; }
+.list li:hover { transform: translateY(-2px); background: #fffdf6; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}
+@media (max-width: 560px) {
+  .farty { width: 78px; height: 78px; font-size: 16px; right: 10px; bottom: 10px; }
+  .page { padding-bottom: 140px; }
+}

@@ -104,10 +104,13 @@ export default function FartyParty() {
 
     setCallout(CALLOUTS[Math.floor(Math.random() * CALLOUTS.length)]);
 
-    document.body.classList.remove("shake");
-    void document.body.offsetWidth;
-    document.body.classList.add("shake");
-    if (next >= 5) document.body.classList.add("disco");
+    const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!calm) {
+      document.body.classList.remove("shake");
+      void document.body.offsetWidth;
+      document.body.classList.add("shake");
+      if (next >= 5) document.body.classList.add("disco");
+    }
     if (next >= 10) document.body.classList.add("toxic");
 
     fetch("/api/fart", { method: "POST", body: JSON.stringify({ combo: next }) })
@@ -150,7 +153,12 @@ export default function FartyParty() {
           </div>
         )}
       </div>
-      <button className="farty" onClick={fart} title="Does absolutely nothing useful">
+      <button
+        className="farty"
+        onClick={fart}
+        title="Does absolutely nothing useful"
+        aria-label={`Farty party. Plays a fart sound.${globalFarts !== null ? ` ${globalFarts} global farts so far.` : ""}`}
+      >
         <span>FARTY</span>
         <span>PARTY</span>
         {globalFarts !== null && <em>{globalFarts.toLocaleString()} global farts</em>}
