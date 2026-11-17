@@ -7,6 +7,10 @@
 
 Built for the Stupid Ideas Hackathon, Ottawa, Nov 15 2026.
 
+**Live:** https://delarp.vercel.app · **Demo video (50s):** [media/delarp-demo.mp4](media/delarp-demo.mp4)
+
+Won the **Great Bob Award** at the Stupid Ideas Hackathon Ottawa 2026. Its Stupid API powers [AURA DEBT](https://aura-debt.vercel.app), another team's project at the same hackathon.
+
 ## Prize tracks
 
 | Track | What we built |
